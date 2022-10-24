@@ -1,11 +1,11 @@
 """Diversity analysis will focus on country/continent and gender."""
+
 import json
 from collections import defaultdict
 from textwrap import dedent
 
 import click
 import pystow
-import requests
 import yaml
 from tqdm import tqdm
 
@@ -133,10 +133,16 @@ def main():
         "Antonarctica",
         "Jguzman210",
         "ccadete",
+        "psyrebecca",  # not enough information (He group)
+        "Rena-Yang-cell",  # not enough information (He group)
+        "paulbrowne",  # not enough information
         # Might be possible with more work
         "DiegoRegalado",
-        # Not an academic
+        "kbdhaar",
+        "aechchiki",  # orcid:0000-0003-3571-5420, need to check publications or email a.echchiki@gmail.com
+        # Not an academic (e.g., profile like a software developer)
         "mfjackson",
+        "bkr-iotic",
         ##############################################
         # Almost got the following, will leave notes #
         ##############################################
@@ -144,6 +150,29 @@ def main():
         # contributed to nmrML, probably Christopher Costa (author of
         # https://www.sciencedirect.com/science/article/pii/S0169260715300535?via%3Dihub#!)
         "Huffmaar",  # anythony huffman, graduate student of Oliver He
+        ##############################################
+        # Sent email for follow-up                   #
+        ##############################################
+        "ypandit",  # emailed
+        "decorons",  # emailed
+        "srynobio",  # emailed
+        "seymourmegan",
+        "manulera",
+        ##############################################
+        # Will run after improving PyORCIDator       #
+        ##############################################
+        "seljaseppala",  # update pyorcidator, then orcid:0000-0002-0791-1347
+        "sjbost",  # update pyorcidator, then orcid:0000-0001-8553-9539
+        "cmrn-rhi",  # asked Rhiannon to make her own
+        "StroemPhi",  # asked to make his own
+        "cosmicnet",  # orcid:0000-0003-3267-4993
+        "iwilkie",  # orcid:0000-0003-1072-8081
+        "celineaubert",  # orcid:0000-0001-6284-4821
+        "CooperStansbury",  # orcid:0000-0003-2413-8314
+        "austinmeier",  # orcid:0000-0001-6996-0040
+        "Audald",  # orcid:0000-0001-6272-9639 twitter:ALloretVillas
+        "Anoosha-Sehar",  # orcid:0000-0001-5275-8866
+        "adbartni",  # orcid:0000-0001-9676-7377
     }
     it = {
         (
@@ -169,6 +198,7 @@ WHERE
         OPTIONAL {{ ?person wdt:P496 ?orcid }}
         OPTIONAL {{ ?person wdt:P21 ?gender }}
     }}
+    FILTER(!BOUND(?person))
     {SERVICE}
 }}
 ORDER BY ?person DESC(?name)
