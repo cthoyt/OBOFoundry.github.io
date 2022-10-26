@@ -132,17 +132,23 @@ def main():
         "WMBio",
         "Antonarctica",
         "Jguzman210",
+        "helenamachado",
         "ccadete",
         "psyrebecca",  # not enough information (He group)
         "Rena-Yang-cell",  # not enough information (He group)
         "paulbrowne",  # not enough information
+        "hstrachan",
+        "euniceyi",
         # Might be possible with more work
+        "ejohnson1", # Ethan Johnson
         "DiegoRegalado",
         "kbdhaar",
         "aechchiki",  # orcid:0000-0003-3571-5420, need to check publications or email a.echchiki@gmail.com
         # Not an academic (e.g., profile like a software developer)
         "mfjackson",
         "bkr-iotic",
+        "indiedotkim",  # see https://indie.kim/, twitter:indiedotkim
+        "tnavatar", # maybe https://orcid.org/0000-0001-5298-0168?
         ##############################################
         # Almost got the following, will leave notes #
         ##############################################
@@ -150,6 +156,8 @@ def main():
         # contributed to nmrML, probably Christopher Costa (author of
         # https://www.sciencedirect.com/science/article/pii/S0169260715300535?via%3Dihub#!)
         "Huffmaar",  # anythony huffman, graduate student of Oliver He
+        "jonathanbona",  # maybe orcid:0000-0003-1402-9616
+        "hjellis",  # maybe orcid:0000-0003-2098-6850, email: helena.ellis@biobankingwithoutborders.com
         ##############################################
         # Sent email for follow-up                   #
         ##############################################
@@ -157,23 +165,41 @@ def main():
         "decorons",  # emailed
         "srynobio",  # emailed
         "seymourmegan",
-        "manulera",
-        ##############################################
-        # Will run after improving PyORCIDator       #
-        ##############################################
-        "seljaseppala",  # update pyorcidator, then orcid:0000-0002-0791-1347
-        "sjbost",  # update pyorcidator, then orcid:0000-0001-8553-9539
+        "b-sheppard",
+        # ASKED to make their own orcid
         "cmrn-rhi",  # asked Rhiannon to make her own
         "StroemPhi",  # asked to make his own
-        "cosmicnet",  # orcid:0000-0003-3267-4993
-        "iwilkie",  # orcid:0000-0003-1072-8081
-        "celineaubert",  # orcid:0000-0001-6284-4821
-        "CooperStansbury",  # orcid:0000-0003-2413-8314
-        "austinmeier",  # orcid:0000-0001-6996-0040
-        "Audald",  # orcid:0000-0001-6272-9639 twitter:ALloretVillas
-        "Anoosha-Sehar",  # orcid:0000-0001-5275-8866
-        "adbartni",  # orcid:0000-0001-9676-7377
     }
+    ##############################################
+    # Will run after improving PyORCIDator       #
+    ##############################################
+    github_to_orcid = {
+        "seljaseppala": "0000-0002-0791-1347",
+        "sjbost": "0000-0001-8553-9539",
+        "cosmicnet": "0000-0003-3267-4993",
+        "iwilkie": "0000-0003-1072-8081",
+        "celineaubert": "0000-0001-6284-4821",
+        "CooperStansbury": "0000-0003-2413-8314",
+        "austinmeier": "0000-0001-6996-0040",
+        "Audald": "0000-0001-6272-9639",  # twitter:ALloretVillas
+        "Anoosha-Sehar": "0000-0001-5275-8866",
+        "adbartni": "0000-0001-9676-7377",
+        "johnwjudkins": "0000-0001-6595-0902",
+        "hujo91": "0000-0002-4378-6061",
+        "jmillanacosta": "0000-0002-4166-7093",  # twitter:jmillanacosta
+        "jonathanvajda": "0000-0003-4693-5218",
+        "ubyndr": "0000-0002-6012-3729",
+        "hdrabkin": "0000-0003-2689-5511",
+        "rushtong": "0000-0002-4648-4229",
+        "epontell": "0000-0002-7753-1737",
+        "EliotRagueneau": "0000-0002-7876-6503",
+        "annadunn3": "0000-0003-2852-7755",
+        "katiermullen": "0000-0002-5002-8648",
+        "hkir-dev": "0000-0002-3315-2794",
+        "delphinedauga": "0000-0003-3152-1194",
+    }
+    login_blacklist.update(set(github_to_orcid))
+
     it = {
         (
             f'"{login}"',
@@ -187,7 +213,8 @@ def main():
     }
     github_logins = " ".join("(" + " ".join(t) + ")" for t in sorted(it))
     sparql = f"""\
-SELECT DISTINCT ?github ?name ?ontologies ?person ?personLabel ?genderLabel
+SELECT DISTINCT ?github ?name ?ontologies 
+#?person ?personLabel ?genderLabel
 WHERE
 {{
     VALUES (?github ?name ?ontologies) {{ 
