@@ -139,16 +139,19 @@ def main():
         "paulbrowne",  # not enough information
         "hstrachan",
         "euniceyi",
+        "tamuzhou",
         # Might be possible with more work
-        "ejohnson1", # Ethan Johnson
+        "ejohnson1",  # Ethan Johnson
         "DiegoRegalado",
         "kbdhaar",
         "aechchiki",  # orcid:0000-0003-3571-5420, need to check publications or email a.echchiki@gmail.com
+        "danielwelch",  # maybe 0000-0002-5969-1825? or email dwelch2102@gmail.com
         # Not an academic (e.g., profile like a software developer)
         "mfjackson",
         "bkr-iotic",
         "indiedotkim",  # see https://indie.kim/, twitter:indiedotkim
-        "tnavatar", # maybe https://orcid.org/0000-0001-5298-0168?
+        "tnavatar",  # maybe https://orcid.org/0000-0001-5298-0168?
+        "wildlifehexagon",  # https://twitter.com/wildlifehexagon, http://www.erichartline.net/
         ##############################################
         # Almost got the following, will leave notes #
         ##############################################
@@ -162,13 +165,9 @@ def main():
         # Sent email for follow-up                   #
         ##############################################
         "ypandit",  # emailed
-        "decorons",  # emailed
-        "srynobio",  # emailed
+        "decorons",  # emailed, bounced
         "seymourmegan",
         "b-sheppard",
-        # ASKED to make their own orcid
-        "cmrn-rhi",  # asked Rhiannon to make her own
-        "StroemPhi",  # asked to make his own
     }
     ##############################################
     # Will run after improving PyORCIDator       #
@@ -197,6 +196,16 @@ def main():
         "katiermullen": "0000-0002-5002-8648",
         "hkir-dev": "0000-0002-3315-2794",
         "delphinedauga": "0000-0003-3152-1194",
+        "chambm": "0000-0001-6382-3344",
+        "rudnicki": "0000-0001-7235-5511",
+        "mark-jensen ": "0000-0001-9228-8838",
+        "tutajm": "0000-0002-1025-101X",
+        "utecht": "0000-0002-7451-0439",
+        "holger-stenzhorn": "0000-0001-9744-174X",
+        "amanjeev": "0000-0002-2695-0579",  # twitter:amanjeev
+        "srynobio": "0000-0002-1638-5377",  # emailed
+        "cmrn-rhi": "0000-0002-9578-0788",
+        "StroemPhi": "0000-0002-1595-3213",
     }
     login_blacklist.update(set(github_to_orcid))
 
