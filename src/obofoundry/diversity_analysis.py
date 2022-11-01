@@ -1,10 +1,11 @@
 """Diversity analysis will focus on country/continent and gender."""
 
+import itertools as itt
 import json
 from collections import defaultdict
 from textwrap import dedent
-from typing import Set
-import itertools as itt
+from typing import Mapping, Set
+
 import click
 import pystow
 import yaml
@@ -17,6 +18,40 @@ from obofoundry.utils import (
     get_github_user,
     get_repositories,
     query_wikidata,
+)
+
+MAINTAINER_GENDER_SUMMARY = dedent(
+    """\
+    SELECT ?genderLabel (COUNT(?genderLabel) as ?count)
+    WHERE {
+      SELECT DISTINCT ?maintainer ?genderLabel
+      WHERE 
+      {
+        ?ontology wdt:P361 wd:Q4117183 .
+        ?ontology wdt:P126 ?maintainer .
+        ?contributor wdt:P21 ?gender
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". } # Helps get the label in your language, if not, then en language
+      } 
+    }
+    GROUP BY ?genderLabel
+"""
+)
+
+CONTRIBUTOR_GENDER_SUMMARY = dedent(
+    """\
+    SELECT ?genderLabel (COUNT(?genderLabel) as ?count)
+    WHERE {
+      SELECT DISTINCT ?contributor ?genderLabel
+      WHERE 
+      {
+        ?ontology wdt:P361 wd:Q4117183 .
+        ?ontology wdt:767 ?contributor .
+        ?contributor wdt:P21 ?gender
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". } # Helps get the label in your language, if not, then en language
+      } 
+    }
+    GROUP BY ?genderLabel
+"""
 )
 
 SERVICE = (
@@ -182,10 +217,10 @@ def get_ops_wikidata_ids() -> Set[str]:
     return rv
 
 
-def get_contributors():
+def get_github_to_contributors():
     """Get the contributors for all OBO ontologies."""
-    authors = {}
-    author_to_prefix = defaultdict(set)
+    github_to_data = {}
+    github_to_prefixes = defaultdict(set)
     for prefix, (owner, name) in tqdm(
         sorted(get_repositories().items()), unit="ontology"
     ):
@@ -200,9 +235,9 @@ def get_contributors():
             )
             prefix_contributors = {}
             for github_logins in res_json:
-                login = github_logins["login"]
-                github_user = get_github_user(login)
-                prefix_contributors[login] = {
+                github_id = github_logins["login"]
+                github_user = get_github_user(github_id)
+                prefix_contributors[github_id] = {
                     "contributions": github_logins["contributions"],
                     "name": github_user.get("name"),
                     "email": github_user.get("email"),
@@ -212,18 +247,19 @@ def get_contributors():
                     "twitter_username": github_user.get("twitter_username"),
                 }
             path.write_text(json.dumps(prefix_contributors, indent=2, sort_keys=True))
-        for login in prefix_contributors:
-            author_to_prefix[login].add(prefix)
-        authors.update(prefix_contributors)
-    for author, prefixes in author_to_prefix.items():
-        authors[author]["prefixes"] = prefixes
-    return authors
+        for github_id in prefix_contributors:
+            github_to_prefixes[github_id].add(prefix)
+        github_to_data.update(prefix_contributors)
+    for github_id, prefixes in github_to_prefixes.items():
+        github_to_data[github_id]["prefixes"] = prefixes
+    return github_to_data
 
 
 def get_contibutors_wikidata_ids(contributors) -> Set[str]:
     """"""
     values = " ".join(f'"{c}"' for c in sorted(contributors))
-    sparql = dedent(f"""\
+    sparql = dedent(
+        f"""\
         SELECT DISTINCT ?person ?personLabel ?orcid ?genderLabel
         WHERE
         {{
@@ -235,7 +271,8 @@ def get_contibutors_wikidata_ids(contributors) -> Set[str]:
             OPTIONAL {{ ?person wdt:P21 ?gender }}
             {SERVICE}
         }}
-    """)
+    """
+    )
     res = query_wikidata(sparql)
     return {
         record["person"]["value"].removeprefix("http://www.wikidata.org/entity/")
@@ -278,13 +315,15 @@ def get_curation_sparql(contributors):
 
 
 def main():
-    contributors = get_contributors()
+    contributors = get_github_to_contributors()
 
-    wikidata_ids = set(itt.chain(
-        get_contibutors_wikidata_ids(contributors),
-        get_ops_wikidata_ids(),
-        get_responsible_wikidata_ids(),
-    ))
+    wikidata_ids = set(
+        itt.chain(
+            get_contibutors_wikidata_ids(contributors),
+            get_ops_wikidata_ids(),
+            get_responsible_wikidata_ids(),
+        )
+    )
 
     values = " ".join(f"wd:{v}" for v in sorted(wikidata_ids))
     sparql = dedent(
