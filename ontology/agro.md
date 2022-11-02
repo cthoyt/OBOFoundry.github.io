@@ -52,6 +52,7 @@ usages:
   user: https://agrofims.org/about
 - description: AgrO is being used by GARDIAN to facilitate data search within publications and datasets for use in quantitative analyses.
   user: https://gardian.bigdata.cgiar.org/
+wikidata: Q81661533
 activity_status: active
 ---
 

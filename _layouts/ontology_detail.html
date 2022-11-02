@@ -179,6 +179,15 @@ page.preferredPrefix | upcase %} {% if upperPrefix != page.preferredPrefix %}
       </div>
     </div>
     {% endif %}
+
+    {% if page.wikidata %}
+    <div class="card" style="margin-bottom: 1.5em;">
+      <div class="card-header">
+        Contributors
+      </div>
+      <iframe style="width: 100%; height: 50vh; border: none;" src="https://query.wikidata.org/embed.html#SELECT%20%3Fcontributor%20%3FcontributorLabel%20%3Forcid%20%3Fgithub%0AWHERE%20%0A%7B%0A%20%20wd%3A{{ page.wikidata }}%20wdt%3AP767%20%3Fcontributor%20.%0A%20%20OPTIONAL%20%7B%20%3Fcontributor%20wdt%3AP496%20%3Forcid%20%7D%0A%20%20OPTIONAL%20%7B%20%3Fcontributor%20wdt%3AP2037%20%3Fgithub%20%7D%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22%5BAUTO_LANGUAGE%5D%2Cen%22.%20%7D%0A%7D%0AORDER%20BY%20%3FcontributorLabel" referrerpolicy="origin" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+    </div>
+    {% endif %}
   </div>
 
   <div class="col-md-4" style="padding-right: 0">
