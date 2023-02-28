@@ -1,14 +1,20 @@
 """Test data integrity, beyond what's possible with the JSON schema."""
 
 import json
+import os
+import tempfile
 import unittest
+from collections import defaultdict
 from functools import lru_cache
 from io import StringIO
 from pathlib import Path
-from typing import Set
+from typing import ClassVar, Counter, DefaultDict, Set
+from urllib.request import urlretrieve
 
+import bioregistry
 import requests
 import yaml
+from tabulate import tabulate
 
 from obofoundry.standardize_metadata import ModifiedDumper
 from obofoundry.utils import ONTOLOGY_DIRECTORY, get_data, get_new_data
@@ -37,7 +43,97 @@ OBO_TO_SPDX = {
 NOR_DASHBOARD_RESULTS = "https://raw.githubusercontent.com/OBOFoundry/obo-nor.github.io/master/dashboard/dashboard-results.yml"
 
 
-class TestIntegrity(unittest.TestCase):
+class OBOGraphTestMixin(unittest.TestCase):
+    def assert_graph_tests(self, prefix: str, obograph):
+        """Apply tests to graph."""
+        self.assertIsInstance(
+            obograph, dict, msg=f"\n\nIncorrect type: {type(obograph)}"
+        )
+        self.assertIn("graphs", obograph, msg="\n\nOBO Graph JSON does not have graphs")
+
+        json_purl = f"http://purl.obolibrary.org/obo/{prefix}.json"
+        owl_purl = f"http://purl.obolibrary.org/obo/{prefix}.owl"
+        graphs = {graph["id"]: graph for graph in obograph["graphs"]}
+
+        if json_purl in graphs:
+            graph = graphs[json_purl]
+            extension = "json"
+        elif owl_purl in graphs:
+            graph = graphs[owl_purl]
+            extension = "owl"
+        else:
+            return self.fail(msg="\n\ngraphs don't have the correct IDs")
+
+        self.assertIsNotNone(graph)
+        meta = graph.get("meta", {})
+
+        with self.subTest(prefix=prefix, check="bioregistry_xrefs"):
+            errors = defaultdict(Counter)
+            for node in graph["nodes"]:
+                for xref in node.get("meta", {}).get("xrefs", []):
+                    xref_curie = xref["val"]
+                    xref_prefix, xref_identifier = bioregistry.parse_curie(xref_curie)
+                    if xref_prefix is None:
+                        if ":" in xref_curie:
+                            xref_prefix, xref_identifier = xref_curie.split(":", 1)
+                            errors[xref_prefix][xref_identifier] += 1
+                        else:
+                            errors[None][xref_curie] += 1
+
+            errors = dict(errors)
+            if errors:
+                rows = [
+                    (prefix, sum(counter.values()))
+                    for prefix, counter in errors.items()
+                ]
+                total = sum(c for _, c in rows)
+                table = tabulate(
+                    rows, headers=["unknown_prefix", "count"], tablefmt="github"
+                )
+                msg = f"Identified {total:,} unknown prefixes in xrefs:\n\n{table}"
+                self.fail(msg=msg)
+
+        with self.subTest(prefix=prefix, check="version_iri"):
+            version_iri = meta.get("version")
+            self.assertIsNotNone(version_iri)
+            self.assertTrue(
+                version_iri.startswith(f"http://purl.obolibrary.org/obo/{prefix}")
+            )
+            self.assertTrue(
+                version_iri.endswith(f"/{prefix}.{extension}"),
+                msg=f"\n\nVersion IRI is not annotated properly: {version_iri}",
+            )
+            # TODO how much more strict to get with this
+
+        # Cache all properties
+        properties_dd: DefaultDict[str, Set[str]] = defaultdict(set)
+        for prop in meta.get("basicPropertyValues", []):
+            properties_dd[prop["pred"]].add(prop["val"])
+        properties = {k: sorted(v) for k, v in properties_dd.items()}
+
+        with self.subTest(prefix=prefix, check="root term annotation"):
+            self.assertIn(
+                "http://purl.obolibrary.org/obo/IAO_0000700",
+                set(properties),
+                msg=f"\n\n{prefix} does not have explicitly annotated root term(s) with IAO:0000700. "
+                f"\nPlease see https://github.com/OBOFoundry/OBOFoundry.github.io/issues/2149.",
+            )
+
+        version_info_uri = "http://www.w3.org/2002/07/owl#versionInfo"
+        with self.subTest(prefix=prefix, check="version_info"):
+            self.assertIn(
+                version_info_uri,
+                set(properties),
+                msg="\n\nGraph is missing a versionInfo tag",
+            )
+            self.assertEqual(1, len(properties[version_info_uri]))
+            self.assertNotIn(
+                " ", properties[version_info_uri][0], msg="Should not contain spaces"
+            )
+            # TODO implement check that version is either semver or datever
+
+
+class TestIntegrity(OBOGraphTestMixin):
     """Test case for data integrity."""
 
     def setUp(self) -> None:
@@ -228,6 +324,26 @@ class TestIntegrity(unittest.TestCase):
                     msg=f"PURL configuration is missing for {prefix}",
                 )
 
+    @unittest.skipIf(
+        os.getenv("GITHUB_ACTIONS"),
+        reason="These tests are only for meta-testing purposes",
+    )
+    def test_content(self):
+        """Test various aspects of the ontology via an OBO Graph JSON format."""
+        for prefix, record in self.ontologies.items():
+            if self.skip_inactive(record) or prefix in {"ncbitaxon"}:
+                continue
+            products_records = record.get("products", [])
+            if not products_records:
+                continue
+            products = {product["id"] for product in products_records}
+            if f"{prefix}.json" not in products:
+                continue
+            with self.subTest(prefix=prefix):
+                obograph_purl = f"http://purl.obolibrary.org/obo/{prefix}.json"
+                obograph_json = requests.get(obograph_purl).json()
+                self.assert_graph_tests(prefix, obograph_json)
+
 
 class TestStandardizedYaml(unittest.TestCase):
     """Test the YAML is standard."""
@@ -267,7 +383,7 @@ def _string_norm(s: str) -> str:
     )
 
 
-class TestModernIntegrity(unittest.TestCase):
+class TestModernIntegrity(OBOGraphTestMixin):
     """A test case for data integrity exclusively for new ontologies.
 
     Specifically, tests implemented in this integrity test are only
@@ -277,9 +393,37 @@ class TestModernIntegrity(unittest.TestCase):
     build.
     """
 
+    populate_obographs: ClassVar[bool] = True
+
     def setUp(self) -> None:
         """Set up the test case."""
         self.ontologies = get_new_data()
+
+        self.obographs = {}
+        if self.populate_obographs:
+            for prefix, data in self.ontologies.items():
+                if prefix == "ngbo2":
+                    prefix = "ngbo"
+                products = {product["id"] for product in data["products"]}
+                if f"{prefix}.json" in products:
+                    obograph_purl = f"http://purl.obolibrary.org/obo/{prefix}.json"
+                    self.obographs[prefix] = requests.get(obograph_purl).json()
+                elif f"{prefix}.owl" in products:
+                    with tempfile.TemporaryDirectory() as directory:
+                        stub = Path(directory).joinpath(prefix)
+                        owl_path = stub.with_suffix(".owl")
+                        obograph_path = stub.with_suffix(".json")
+                        urlretrieve(
+                            f"http://purl.obolibrary.org/obo/{prefix}.owl", owl_path
+                        )
+                        os.system(
+                            f"robot convert --input {owl_path} --output {obograph_path}"
+                        )
+                        self.obographs[prefix] = json.loads(obograph_path.read_text())
+                else:
+                    self.fail(
+                        f"{prefix} neither defines a OWL or JSON product:\n\nProducts contained: {sorted(products)}"
+                    )
 
     def test_github_references(self):
         """Test that new ontologies reference the pull request where they were added."""
@@ -393,3 +537,8 @@ class TestModernIntegrity(unittest.TestCase):
                 "the standard locations defined by GitHub in https://docs.github.com/en/communities/setting-up-"
                 "your-project-for-healthy-contributions/setting-guidelines-for-repository-contributors.",
             )
+
+    def test_content(self):
+        """Test various aspects of the ontology via an OBO Graph JSON format."""
+        for prefix, obograph in self.obographs.items():
+            self.assert_graph_tests(prefix, obograph)
