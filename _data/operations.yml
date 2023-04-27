@@ -360,3 +360,13 @@ members:
   name: Erik Whiting
   orcid: 0000-0003-1022-5281
   wikidata: Q115716044
+- affiliation:
+    name: Organization -- LEILA PLEASE FILL IN
+    ror: (I'm not sure what this is)
+  country: USA
+  github: lkianifh
+  groups:
+  - outreach
+  name: Leila Kiani
+  orcid: 0000-0000-0000-0000
+  wikidata: Q000000000
