@@ -24,6 +24,8 @@ Expectations of responsiveness:
 3. Do not close issues without responding. If an issue is out of scope for a repository, recommend moving it to a different repository.
 4. It is recommended that one or more developers be designated to triage issues.
 
+See also: [documentation on ontology status](docs/OntologyStatus)
+
 ## Implementation
 
 <i>Issue tracker:</i>

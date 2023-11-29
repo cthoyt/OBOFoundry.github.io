@@ -8,6 +8,8 @@ title: Maintenance (principle 16)
 
 The wording of this principle is still in progress.
 
+See also: [documentation on ontology status](docs/OntologyStatus)
+
 ## Summary and Purpose
 
 The ontology needs to reflect changes in scientific consensus to remain accurate over time.
